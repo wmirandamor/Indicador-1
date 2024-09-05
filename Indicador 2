@@ -1,0 +1,419 @@
+//@version=5
+
+indicator('ITC - Tiempos v2', overlay=true, max_bars_back=1000, max_labels_count=500, max_lines_count=500, max_boxes_count=500)
+
+showohlc = input.bool(true, "Show OHLC / ", group = "GENERAL", inline="ohlc", tooltip = "Show D.O / PDL-PDH / PWL-PWH - PML-PMH")
+textlavelcol= input.color(color.rgb(0, 0, 0), "Text Color", group = "GENERAL", inline="ohlc")
+showmmm = input.bool(true, "Show MMM", group = "GENERAL", tooltip = "Show MMM")
+showkz = input.bool(true, "Show KZs", group = "GENERAL", tooltip = "Show Kill Zones")
+
+var GRP1 = "ASIAN RANGE⌚"
+
+rangeTime = input.session(title='Session Time', defval='1700-0100', group=GRP1)
+showLines = input(title='Show Box Lines /', defval=true, group=GRP1, inline = "box")
+extendLines = input(title='', defval=true, group=GRP1, inline = "box")
+extendTime = input.session(title='¿Extend?', defval='0100-0500', group=GRP1, inline = "box")
+linesWidth = input.int(1, 'Box & Lines Width', minval=1, maxval=4, group=GRP1, inline = "alines")
+boxLineColor = input(color.new(#9c27b0, 50), 'Color', group=GRP1, inline = "alines")
+showBackground = input(title='Show Background /', defval=true, group=GRP1, inline = "showcolor")
+backgroundColor = input(color.new(#9c27b0, 90), '', group=GRP1, inline = "showcolor")
+showMiddleLine = input(title='Show Middle Line', defval=true, group=GRP1, inline = "showcolor")
+middleLineColor = input(color.new(#9c27b0, 50), '', group=GRP1 , inline = "showcolor")
+
+var GRP0 = "FRANKFURT⌚"
+
+showLines0 =  false //input(title='Show Lines', defval=true, group=GRP0)
+showBackground0 = input(title='', defval=true, group=GRP0, inline = "FF") and showkz
+rangeTime0 = input.session(title='FRANKFURT', defval='0200-0301', group=GRP0, inline = "FF")
+linesWidth0 = 1 //input.int(1, 'Box And Lines Width', minval=1, maxval=4, group=GRP0)
+boxLineColor0 = #f02c2c //input(color.new(#f02c2c, 95), 'Box Line Color', group=GRP0)
+backgroundColor0 = input(color.new(#f03232, 90), '', group=GRP0, inline = "FF")
+
+var GRP5 = "LONDON⌚"
+
+showLines4 = false // input(title='Show Lines', defval=true, group=GRP5)
+showBackground4 = input(title='', defval=true, group=GRP5, inline = "bkl") and showkz
+rangeTime4 = input.session(title='LONDON KZ', defval='0300-0500', group=GRP5, inline = "bkl")
+linesWidth4 = 1 //input.int(1, 'Box And Lines Width', minval=1, maxval=4, group=GRP5)
+boxLineColor4 = #00bcd4 // input(color.new(#00bcd4, 95), 'Box Line Color', group=GRP5)
+backgroundColor4 = input(color.new(#00bcd4, 90), '', group=GRP5, inline = "bkl")
+
+
+
+var GRP6 = "NEWYORK⌚"
+
+showLines5 = false // input(title='Show Lines', defval=true, group=GRP6)
+showBackground5 = input(title='', defval=true, group=GRP6, inline = "nyk") and showkz
+rangeTime5 = input.session(title='NEWYORK KZ', defval='0800-1000', group=GRP6, inline = "nyk")
+linesWidth5 = 1 // input.int(1, 'Box And Lines Width', minval=1, maxval=4, group=GRP6)
+boxLineColor5 = #4caf50 // input(color.new(#4caf50, 95), 'Box Line Color', group=GRP6)
+backgroundColor5 = input(color.new(#4caf50, 90), '', group=GRP6, inline = "nyk")
+
+
+
+////////////////////////////////////////////
+
+inSession = not na(time(timeframe.period, rangeTime))
+inExtend = not na(time(timeframe.period, extendTime))
+
+
+startTime = 0
+startTime := inSession and not inSession[1] ? time : startTime[1]
+
+//Box lines
+var line lowHLine = na
+var line topHLine = na
+var line leftVLine = na
+var line rightVLine = na
+var line middleHLine = na
+var box bgBox = na
+
+var low_val = 0.0
+var high_val = 0.0
+if inSession and not inSession[1]
+    low_val := low
+    high_val := high
+    high_val
+
+// Plot lines
+if inSession and timeframe.isintraday
+    if inSession[1]
+        line.delete(lowHLine)
+        line.delete(topHLine)
+        line.delete(leftVLine)
+        line.delete(rightVLine)
+        line.delete(middleHLine)
+        box.delete(bgBox)
+
+    if low < low_val
+        low_val := low
+        low_val
+    if high > high_val
+        high_val := high
+        high_val
+
+    //Create Box
+    //x1, y1, x2, y2
+    if showBackground
+        bgBox := box.new(startTime, high_val, time, low_val, xloc=xloc.bar_time, bgcolor=backgroundColor, border_width=0)
+
+    if showLines
+        lowHLine := line.new(startTime, low_val, time, low_val, xloc=xloc.bar_time, color=boxLineColor, style=line.style_solid, width=linesWidth)
+        topHLine := line.new(startTime, high_val, time, high_val, xloc=xloc.bar_time, color=boxLineColor, style=line.style_solid, width=linesWidth)
+        leftVLine := line.new(startTime, high_val, startTime, low_val, xloc=xloc.bar_time, color=boxLineColor, style=line.style_solid, width=linesWidth)
+        rightVLine := line.new(time, high_val, time, low_val, xloc=xloc.bar_time, color=boxLineColor, style=line.style_solid, width=linesWidth)
+
+    //Create Middle line
+    if showMiddleLine
+        middleHLine := line.new(startTime, (high_val + low_val) / 2, time, (high_val + low_val) / 2, xloc=xloc.bar_time, color=middleLineColor, style=line.style_solid, width=linesWidth)
+
+else
+    if inExtend and extendLines and not inSession and timeframe.isintraday
+        time1 = line.get_x1(lowHLine)
+        time2 = line.get_x2(lowHLine)
+        price = line.get_y1(lowHLine)
+        line.delete(lowHLine)
+        lowHLine := line.new(time1, price, time, price, xloc=xloc.bar_time, color=boxLineColor, style=line.style_solid, width=linesWidth)
+        
+        time1 := line.get_x1(topHLine)
+        time2 := line.get_x2(topHLine)
+        price := line.get_y1(topHLine)
+        line.delete(topHLine)
+        topHLine := line.new(time1, price, time, price, xloc=xloc.bar_time, color=boxLineColor, style=line.style_solid, width=linesWidth)
+
+        time1 := line.get_x1(middleHLine)
+        time2 := line.get_x2(middleHLine)
+        price := line.get_y1(middleHLine)
+        line.delete(middleHLine)
+        middleHLine := line.new(time1, price, time, price, xloc=xloc.bar_time, color=middleLineColor, style=line.style_solid, width=linesWidth)
+        middleHLine
+
+
+////////////////////////////////////////////
+
+inSession0 = not na(time(timeframe.period, rangeTime0))
+
+startTime0 = 0
+startTime0 := inSession0 and not inSession0[1] ? time : startTime0[1]
+
+//Box lines
+var line lowHLine0 = na
+var line topHLine0 = na
+var line leftVLine0 = na
+var line rightVLine0 = na
+var line middleHLine0 = na
+var box bgBox0 = na
+
+var low_val0 = 0.0
+var high_val0 = 0.0
+if inSession0 and not inSession0[1]
+    low_val0 := low
+    high_val0 := high
+    high_val0
+
+// Plot lines
+if inSession0 and timeframe.isintraday
+    if inSession0[1]
+        line.delete(lowHLine0)
+        line.delete(topHLine0)
+        line.delete(leftVLine0)
+        line.delete(rightVLine0)
+        line.delete(middleHLine0)
+        box.delete(bgBox0)
+
+    if low < low_val0
+        low_val0 := low
+        low_val0
+    if high > high_val0
+        high_val0 := high
+        high_val0
+
+    //Create Box
+    //x1, y1, x2, y2
+    if showBackground0
+        bgBox0 := box.new(startTime0, high_val0, time, low_val0, xloc=xloc.bar_time, bgcolor=backgroundColor0, border_width=0)
+
+    if showLines0
+        lowHLine0 := line.new(startTime0, low_val0, time, low_val0, xloc=xloc.bar_time, color=boxLineColor0, style=line.style_solid, width=linesWidth0)
+        topHLine0 := line.new(startTime0, high_val0, time, high_val0, xloc=xloc.bar_time, color=boxLineColor0, style=line.style_solid, width=linesWidth0)
+        leftVLine0 := line.new(startTime0, high_val0, startTime0, low_val0, xloc=xloc.bar_time, color=boxLineColor0, style=line.style_solid, width=linesWidth0)
+        rightVLine0 := line.new(time, high_val0, time, low_val0, xloc=xloc.bar_time, color=boxLineColor0, style=line.style_solid, width=linesWidth0)
+
+////////////////////////////////////////////
+
+
+inSession4 = not na(time(timeframe.period, rangeTime4))
+
+startTime4 = 0
+startTime4 := inSession4 and not inSession4[1] ? time : startTime4[1]
+
+//Box lines
+var line lowHLine4 = na
+var line topHLine4 = na
+var line leftVLine4 = na
+var line rightVLine4 = na
+var line middleHLine4 = na
+var box bgBox4 = na
+
+var low_val4 = 0.0
+var high_val4 = 0.0
+if inSession4 and not inSession4[1]
+    low_val4 := low
+    high_val4 := high
+    high_val4
+
+// Plot lines
+if inSession4 and timeframe.isintraday
+    if inSession4[1]
+        line.delete(lowHLine4)
+        line.delete(topHLine4)
+        line.delete(leftVLine4)
+        line.delete(rightVLine4)
+        line.delete(middleHLine4)
+        box.delete(bgBox4)
+
+    if low < low_val4
+        low_val4 := low
+        low_val4
+    if high > high_val4
+        high_val4 := high
+        high_val4
+
+    //Create Box
+    //x1, y1, x2, y2
+    if showBackground4
+        bgBox4 := box.new(startTime4, high_val4, time, low_val4, xloc=xloc.bar_time, bgcolor=backgroundColor4, border_width=0)
+
+    if showLines4
+        lowHLine4 := line.new(startTime4, low_val4, time, low_val4, xloc=xloc.bar_time, color=boxLineColor4, style=line.style_solid, width=linesWidth4)
+        topHLine4 := line.new(startTime4, high_val4, time, high_val4, xloc=xloc.bar_time, color=boxLineColor4, style=line.style_solid, width=linesWidth4)
+        leftVLine4 := line.new(startTime4, high_val4, startTime4, low_val4, xloc=xloc.bar_time, color=boxLineColor4, style=line.style_solid, width=linesWidth4)
+        rightVLine4 := line.new(time, high_val4, time, low_val4, xloc=xloc.bar_time, color=boxLineColor4, style=line.style_solid, width=linesWidth4)
+
+////////////////////////////////////////////
+
+inSession5 = not na(time(timeframe.period, rangeTime5))
+
+startTime5 = 0
+startTime5 := inSession5 and not inSession5[1] ? time : startTime5[1]
+
+//Box lines
+var line lowHLine5 = na
+var line topHLine5 = na
+var line leftVLine5 = na
+var line rightVLine5 = na
+var line middleHLine5 = na
+var box bgBox5 = na
+
+var low_val5 = 0.0
+var high_val5 = 0.0
+if inSession5 and not inSession5[1]
+    low_val5 := low
+    high_val5 := high
+    high_val5
+
+// Plot lines
+if inSession5 and timeframe.isintraday
+    if inSession5[1]
+        line.delete(lowHLine5)
+        line.delete(topHLine5)
+        line.delete(leftVLine5)
+        line.delete(rightVLine5)
+        line.delete(middleHLine5)
+        box.delete(bgBox5)
+
+    if low < low_val5
+        low_val5 := low
+        low_val5
+    if high > high_val5
+        high_val5 := high
+        high_val5
+
+    //Create Box
+    //x1, y1, x2, y2
+    if showBackground5
+        bgBox5 := box.new(startTime5, high_val5, time, low_val5, xloc=xloc.bar_time, bgcolor=backgroundColor5, border_width=0)
+
+    if showLines5
+        lowHLine5 := line.new(startTime5, low_val5, time, low_val5, xloc=xloc.bar_time, color=boxLineColor5, style=line.style_solid, width=linesWidth5)
+        topHLine5 := line.new(startTime5, high_val5, time, high_val5, xloc=xloc.bar_time, color=boxLineColor5, style=line.style_solid, width=linesWidth5)
+        leftVLine5 := line.new(startTime5, high_val5, startTime5, low_val5, xloc=xloc.bar_time, color=boxLineColor5, style=line.style_solid, width=linesWidth5)
+        rightVLine5 := line.new(time, high_val5, time, low_val5, xloc=xloc.bar_time, color=boxLineColor5, style=line.style_solid, width=linesWidth5)
+
+///////////////////////////////////////////////
+
+
+//INPUTS
+
+ffmmmshow = input.bool(false, "", inline='fa', group=GRP0) and showmmm
+ffRange = input.session(title='MMM', defval='0200-0201', inline='fa', group=GRP0)
+ffcolor = input.color(color.new(color.yellow,20),title="",inline="fa", group=GRP0)
+ffStyle = input.string(title="", defval=line.style_solid, options=[line.style_dotted, line.style_dashed, line.style_solid],inline="fa", group=GRP0)
+
+lmmmshow = input.bool(true, "", inline='la', group=GRP5) and showmmm
+mmm1Range = input.session(title='MMM', defval='0330-0331', inline='la', group=GRP5)
+mmm1color = input.color(color.new(color.yellow,20),title="",inline="la", group=GRP5)
+mmm1Style = input.string(title="", defval=line.style_solid, options=[line.style_dotted, line.style_dashed, line.style_solid],inline="la", group=GRP5)
+
+nmmmshow = input.bool(true, "", inline='na', group=GRP6) and showmmm
+mmm2Range = input.session(title='MMM 1', defval='0830-0831', inline='na', group=GRP6)
+mmm2color = input.color(color.new(color.yellow,20),title="",inline="na", group=GRP6)
+mmm2Style = input.string(title="", defval=line.style_solid, options=[line.style_dotted, line.style_dashed, line.style_solid],inline="na", group=GRP6)
+
+nmmmshow2 = input.bool(true, "", inline='na2', group=GRP6) and showmmm
+mmm3Range = input.session(title='MMM 2', defval='0930-0931', inline='na2', group=GRP6)
+mmm3color = input.color(color.new(color.yellow,20),title="",inline="na2", group=GRP6)
+mmm3Style = input.string(title="", defval=line.style_solid, options=[line.style_dotted, line.style_dashed, line.style_solid],inline="na2", group=GRP6)
+
+nmmmshow3 = input.bool(true, "", inline='na3', group=GRP6) and showmmm
+mmm4Range = input.session(title='MMM 3', defval='1000-1001', inline='na3', group=GRP6)
+mmm4color = input.color(color.new(color.yellow,20),title="",inline="na3", group=GRP6)
+mmm4Style = input.string(title="", defval=line.style_solid, options=[line.style_dotted, line.style_dashed, line.style_solid],inline="na3", group=GRP6)
+
+nmmmshow4 = input.bool(true, "", inline='na4', group=GRP6) and showmmm
+lcRange = input.session(title='MMM 4', defval='1100-1101', inline='na4', group=GRP6)
+lccolor = input.color(color.new(color.yellow,20),title="",inline="na4", group=GRP6)
+lcStyle = input.string(title="", defval=line.style_solid, options=[line.style_dotted, line.style_dashed, line.style_solid],inline="na4", group=GRP6)
+
+
+//Plot lines
+in_session_ff = time(timeframe.period, ffRange)
+sessionffActive = in_session_ff and timeframe.multiplier <= 240
+var line ff = na
+if sessionffActive and sessionffActive[1] == false
+    ff := line.new(ffmmmshow ? bar_index : na, high+0.001, bar_index, low-0.001,color=ffcolor, style=ffStyle)
+
+in_session_mmm1 = time(timeframe.period, mmm1Range)
+sessionmmm1Active = in_session_mmm1 and timeframe.multiplier <= 240
+var line mmm1 = na
+if sessionmmm1Active and sessionmmm1Active[1] == false
+    mmm1 := line.new(lmmmshow ? bar_index : na , high+0.001, bar_index, low-0.001,color=mmm1color, style=mmm1Style)
+
+in_session_mmm2 = time(timeframe.period, mmm2Range)
+sessionmmm2Active = in_session_mmm2 and timeframe.multiplier <= 240
+var line mmm2 = na
+if sessionmmm2Active and sessionmmm2Active[1] == false
+    mmm2 := line.new(nmmmshow ? bar_index : na, high+0.001, bar_index, low-0.001,color=mmm2color, style=mmm2Style)
+   
+in_session_mmm3 = time(timeframe.period, mmm3Range)
+sessionmmm3Active = in_session_mmm3 and timeframe.multiplier <= 240
+var line mmm3 = na
+if sessionmmm3Active and sessionmmm3Active[1] == false
+    mmm3 := line.new(nmmmshow2 ? bar_index : na,high+0.001,bar_index,low-0.001,color=mmm3color, style=mmm3Style)
+   
+in_session_mmm4 = time(timeframe.period, mmm4Range)
+sessionmmm4Active = in_session_mmm4 and timeframe.multiplier <= 240
+var line mmm4 = na
+if sessionmmm4Active and sessionmmm4Active[1] == false
+    mmm4 := line.new(nmmmshow3 ? bar_index : na,high+0.001,bar_index,low-0.001,color=mmm4color, style=mmm4Style)
+
+in_session_lc = time(timeframe.period, lcRange)
+sessionlcActive = in_session_lc and timeframe.multiplier <= 240
+var line lc = na
+if sessionlcActive and sessionlcActive[1] == false
+    lc := line.new(nmmmshow4 ? bar_index : na,high+0.001,bar_index,low-0.001,color=lccolor, style=lcStyle)
+
+//////////////// DAILY OPEN    ///////////////////////////////////////
+
+offset_val = 10
+
+bool showdaily = input(true, "Daily Open", group="OHLC", inline="d")
+color dailycolor = input.color(#000000, "", group="OHLC", inline="d")
+
+daily_open(x) =>
+    trigger = na(time('D')) or ta.change(time('D'))
+    ta.valuewhen(trigger, open, x)
+
+daily_open2= request.security(syminfo.tickerid, 'D', open[1], lookahead=barmerge.lookahead_on)
+
+plot(showdaily and showohlc ? daily_open(0) : na, 'Daily Open', color.new(dailycolor, 5), 1, plot.style_circles)
+//plot(showPrev and horizontals2 ? daily_open(2) : na, 'Previous Daily Open', color.new(pdailycolor, 5), 1, plot.style_circles)
+plotshape(daily_open(0) and showohlc and showdaily ? daily_open(0) : na, style=shape.labeldown, location=location.absolute, color=color.new(color.yellow, 100), textcolor=color.new(textlavelcol, 20), show_last=1, text='D.O', offset=offset_val, title='Daily Open')
+//plotshape(daily_open(2) and horizontals2, style=shape.labeldown, location=location.absolute, color=color.new(color.yellow, 100), textcolor=color.new(textlavelcol, 20), show_last=2, text='P.D.O', offset=offset_val, title='Previus Daily Open')
+
+////////// PREVIUS DAILY HIGH LOW ///////////////////////////////////////////////////////////////////////////////
+
+bool showdailyph = input(true, "Previus Daily High", group="OHLC", inline="ph")
+color dailycolorph = input.color(color.yellow, "", group="OHLC", inline="ph")
+bool showdailypl = input(true, "Previous Daily Low", group="OHLC", inline="ph")
+color pdailycolorpl = input.color(color.yellow, "", group="OHLC", inline="ph")
+
+daily_ph = request.security(syminfo.tickerid, 'D', high[1], lookahead=barmerge.lookahead_on)
+daily_pl = request.security(syminfo.tickerid, 'D', low[1], lookahead=barmerge.lookahead_on)
+        
+
+plot(showdailyph and showohlc ? daily_ph : na, 'Previus Daily High', color.new(dailycolorph, 5), 1, plot.style_circles)
+plot(showdailypl and showohlc ? daily_pl : na, 'Previous Daily Low', color.new(pdailycolorpl, 5), 1, plot.style_circles)
+plotshape(daily_ph and showohlc and showdailyph ? daily_ph : na, style=shape.labeldown, location=location.absolute, color=color.new(color.yellow, 100), textcolor=color.new(textlavelcol, 20), show_last=1, text='P.D.H', offset=offset_val, title='Previus Daily High')
+plotshape(daily_pl and showohlc and showdailypl ? daily_pl : na, style=shape.labeldown, location=location.absolute, color=color.new(color.yellow, 100), textcolor=color.new(textlavelcol, 20), show_last=1, text='P.D.L', offset=offset_val, title='Previus Daily Low')
+
+/// PREVIUS WEEKLY HIGH LOW //////////////////////////////////////////////////////////////////////////////////////////
+
+bool showwph = input(true, "Previus Weekly High", group="OHLC", inline="wh")
+color wcolorph = input.color(#fffcbc, "", group="OHLC", inline="wh")
+bool showwpl = input(true, "Previous Weekly Low", group="OHLC", inline="wh")
+color wcolorpl = input.color(#fffcbc, "", group="OHLC", inline="wh")
+
+w_ph = request.security(syminfo.tickerid, 'W', high[1], lookahead=barmerge.lookahead_on)
+w_pl = request.security(syminfo.tickerid, 'W', low[1], lookahead=barmerge.lookahead_on)
+        
+
+plot(showwph and showohlc ? w_ph : na, 'Previus Weekly High', color.new(wcolorph, 5), 1, plot.style_circles)
+plot(showwpl and showohlc ? w_pl : na, 'Previous Weekly Low', color.new(wcolorpl, 5), 1, plot.style_circles)
+plotshape(w_ph and showohlc and showwph ? w_ph : na, style=shape.labeldown, location=location.absolute, color=color.new(#fffcbc, 100), textcolor=color.new(textlavelcol, 20), show_last=1, text='P.W.H', offset=offset_val, title='Previus Weekly High')
+plotshape(w_pl and showohlc and showwpl ? w_pl : na, style=shape.labeldown, location=location.absolute, color=color.new(#fffcbc, 100), textcolor=color.new(textlavelcol, 20), show_last=1, text='P.W.L', offset=offset_val, title='Previus Weekly Low')
+
+/// PREVIUS MONTH HIGH LOW //////////////////////////////////////////////////////////////////////////////////////////
+
+bool showMph = input(false, "Previus Month High", group="OHLC", inline="Mh")
+color Mcolorph = input.color(#f08f18, "", group="OHLC", inline="Mh")
+bool showMpl = input(false, "Previous Month Low", group="OHLC", inline="Mh")
+color Mcolorpl = input.color(#f08f18, "", group="OHLC", inline="Mh")
+M_ph = request.security(syminfo.tickerid, 'M', high[1], lookahead=barmerge.lookahead_on)
+M_pl = request.security(syminfo.tickerid, 'M', low[1], lookahead=barmerge.lookahead_on)     
+plot(showdailyph and showohlc and  showMph ? M_ph : na, 'Previus Month High', color.new(Mcolorph, 5), 1, plot.style_circles)
+plot(showdailypl and showohlc and showMpl ? M_pl : na, 'Previous Month Low', color.new(Mcolorpl, 5), 1, plot.style_circles)
+plotshape(w_ph and showohlc and showMph ? M_ph : na, style=shape.labeldown, location=location.absolute, color=color.new(#fffcbc, 100), textcolor=color.new(textlavelcol, 20), show_last=1, text='P.M.H', offset=offset_val, title='Previus Month High')
+plotshape(w_pl and showohlc and showMpl ? M_pl : na, style=shape.labeldown, location=location.absolute, color=color.new(#fffcbc, 100), textcolor=color.new(textlavelcol, 20), show_last=1, text='P.M.L', offset=offset_val, title='Previus Month Low')
+
+///////////////////////////////////
